@@ -1,0 +1,34 @@
+# Go module files
+go.sum
+golang.pkg
+
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of `go build`
+/bin/
+/build/
+/dist/
+
+# Configuration files
+.env
+.bash_profile
+
+# IDE or Editor specific files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs and debug files
+*.log
+*.tmp
+
+# System files
+.DS_Store
+Thumbs.db
