@@ -18,6 +18,7 @@ golang.pkg
 # Configuration files
 .env
 .bash_profile
+*.sh
 
 # IDE or Editor specific files
 .vscode/
