@@ -22,42 +22,37 @@ func NewCheckCommand() *cobra.Command {
 			filePath := args[0]
 			fmt.Printf("Reviewing file: %s\n", filePath)
 
-			// Display progress bar while waiting for GPT response
+			// Show progress bar during GPT processing
 			done := make(chan bool)
 			go showProgressBar(done)
 
 			review, err := internal.ReviewCode(filePath)
-			done <- true // Signal the progress bar to stop
+			close(done) // Ensure the channel is closed to terminate progress bar
 
 			if err != nil {
 				fmt.Printf("❌ Error: %s\n", err)
 				return
 			}
 
+			// Display review results
 			fmt.Println("✅ Review Result:")
 			fmt.Println(review)
 
-			// Prompt user for git commit and push
-			reader := bufio.NewReader(os.Stdin)
-			fmt.Print("Do you want to commit and push the changes to Git? (y/n): ")
-			choice, _ := reader.ReadString('\n')
-			choice = strings.TrimSpace(strings.ToLower(choice))
-
-			if choice == "y" {
-				// Perform git commit and push
+			// Ask for Git commit and push
+			if askForGitCommit() {
 				if err := gitCommitAndPush(filePath); err != nil {
-					fmt.Printf("❌ Error during git push: %s\n", err)
+					fmt.Printf("❌ Error during Git operation: %s\n", err)
 				} else {
 					fmt.Println("✅ Changes successfully committed and pushed to Git!")
 				}
 			} else {
-				fmt.Println("❌ Skipping git push.")
+				fmt.Println("❌ Skipping Git push.")
 			}
 		},
 	}
 }
 
-// showProgressBar displays a simple progress bar
+// showProgressBar displays a progress bar during long-running tasks
 func showProgressBar(done chan bool) {
 	for {
 		select {
@@ -73,32 +68,43 @@ func showProgressBar(done chan bool) {
 	}
 }
 
-// gitCommitAndPush handles the git commit and push commands
+// askForGitCommit prompts the user for confirmation to commit and push changes
+func askForGitCommit() bool {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("Do you want to commit and push the changes to Git? (y/n): ")
+		choice, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("❌ Error reading input: %s\n", err)
+			continue
+		}
+
+		choice = strings.TrimSpace(strings.ToLower(choice))
+		if choice == "y" {
+			return true
+		} else if choice == "n" {
+			return false
+		} else {
+			fmt.Println("❌ Invalid input. Please enter 'y' or 'n'.")
+		}
+	}
+}
+
+// gitCommitAndPush performs Git operations to stage, commit, and push changes
 func gitCommitAndPush(filePath string) error {
-	// Stage the file
-	stageCmd := exec.Command("git", "add", filePath)
-	stageCmd.Stdout = os.Stdout
-	stageCmd.Stderr = os.Stderr
-	if err := stageCmd.Run(); err != nil {
-		return fmt.Errorf("failed to stage file: %w", err)
+	commands := [][]string{
+		{"git", "add", filePath},
+		{"git", "commit", "-m", "Code reviewed by GPT-CLI"},
+		{"git", "push"},
 	}
 
-	// Commit the changes
-	commitMessage := "Code reviewed by GPT-CLI"
-	commitCmd := exec.Command("git", "commit", "-m", commitMessage)
-	commitCmd.Stdout = os.Stdout
-	commitCmd.Stderr = os.Stderr
-	if err := commitCmd.Run(); err != nil {
-		return fmt.Errorf("failed to commit changes: %w", err)
+	for _, cmdArgs := range commands {
+		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to execute '%s': %w", strings.Join(cmdArgs, " "), err)
+		}
 	}
-
-	// Push the changes
-	pushCmd := exec.Command("git", "push")
-	pushCmd.Stdout = os.Stdout
-	pushCmd.Stderr = os.Stderr
-	if err := pushCmd.Run(); err != nil {
-		return fmt.Errorf("failed to push changes: %w", err)
-	}
-
 	return nil
 }
