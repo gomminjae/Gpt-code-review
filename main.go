@@ -6,21 +6,29 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Root Command 생성
-	rootCmd := &cobra.Command{
-		Use:   "test-cli",
-		Short: "CLI for testing commands",
+	// Load environment variables from .env file
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("⚠️  Warning: Could not load .env file")
 	}
 
-	// CheckCommand 추가
-	rootCmd.AddCommand(cmd.NewCheckCommand())
+	// Create the root command
+	rootCmd := &cobra.Command{
+		Use:   "gpt-code-review",
+		Short: "A CLI tool for GPT-based code review",
+		Long: `GPT Code Review is a CLI tool that uses OpenAI's GPT model 
+to review source code files and provide feedback directly in your terminal.`,
+	}
 
-	// Command 실행
+	// Register commands
+	rootCmd.AddCommand(cmd.NewCheckCommand()) // Review command
+
+	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalf("❌ Error: %v", err)
 		os.Exit(1)
 	}
 }

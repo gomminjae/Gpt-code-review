@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewCheckCommand creates the "review" command
+
 func NewCheckCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "review",
@@ -22,23 +22,22 @@ func NewCheckCommand() *cobra.Command {
 			filePath := args[0]
 			fmt.Printf("Reviewing file: %s\n", filePath)
 
-			// Show progress bar during GPT processing
+		
 			done := make(chan bool)
 			go showProgressBar(done)
 
 			review, err := internal.ReviewCode(filePath)
-			close(done) // Ensure the channel is closed to terminate progress bar
+			close(done) 
 
 			if err != nil {
 				fmt.Printf("❌ Error: %s\n", err)
 				return
 			}
 
-			// Display review results
+		
 			fmt.Println("✅ Review Result:")
 			fmt.Println(review)
 
-			// Ask for Git commit and push
 			if askForGitCommit() {
 				if err := gitCommitAndPush(filePath); err != nil {
 					fmt.Printf("❌ Error during Git operation: %s\n", err)
@@ -52,7 +51,6 @@ func NewCheckCommand() *cobra.Command {
 	}
 }
 
-// showProgressBar displays a progress bar during long-running tasks
 func showProgressBar(done chan bool) {
 	for {
 		select {
@@ -68,7 +66,6 @@ func showProgressBar(done chan bool) {
 	}
 }
 
-// askForGitCommit prompts the user for confirmation to commit and push changes
 func askForGitCommit() bool {
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -90,7 +87,6 @@ func askForGitCommit() bool {
 	}
 }
 
-// gitCommitAndPush performs Git operations to stage, commit, and push changes
 func gitCommitAndPush(filePath string) error {
 	commands := [][]string{
 		{"git", "add", filePath},
